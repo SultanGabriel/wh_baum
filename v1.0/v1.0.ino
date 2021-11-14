@@ -82,22 +82,22 @@ byte NOT_DEFINED_INVERTED[8] = {
       -> connect
           - LCD
           - 74HC595
-
+    
           LCD // Wiring: SDA pin is connected to A4 and SCL pin to A5.
 */
 
-int butLeft = 2;
-int butRight = 3;
-int butSelect = 4;
+int leftButtonPin = 2;
+int rightButtonPin = 3;
+int selectButtonPin = 4;
 
 LiquidCrystal_I2C lcd = LiquidCrystal_I2C(0x27, 16, 2);
 
 void setup() {
   // init pins
 
-  pinMode(butLeft, INPUT);  // LEFT
-  pinMode(butRight, INPUT);  // RIGHT
-  pinMode(butSelect, INPUT);  // SELECT
+  pinMode(leftButtonPin, INPUT);  // LEFT
+  pinMode(rightButtonPin, INPUT);  // RIGHT
+  pinMode(selectButtonPin, INPUT);  // SELECT
 
   // init display and custom chars
 
@@ -139,9 +139,10 @@ void lcd_select() {
 
 
 void lcd_update() {
-
+  // Button Press Handler
+  // LEFT
   if (!selected) {
-    if (digitalRead(2) == 1 && millis() - millsPress > 200) {
+    if (digitalRead(leftButtonPin) == 1 && millis() - millsPress > 200) {
       millsPress = millis();
       //    Serial.write("LEFT\n");
 
@@ -153,8 +154,9 @@ void lcd_update() {
 
       lcd_drawMenu();
     }
-
-    if (digitalRead(3) == 1 && millis() - millsPress > 200) {
+    
+    // RIGHT
+    if (digitalRead(rightButtonPin) == 1 && millis() - millsPress > 200) {
       millsPress = millis();
       //   Serial.write("RIGHT\n");
       lcd_cursorPos = (lcd_cursorPos + 1) % 4;
@@ -162,7 +164,9 @@ void lcd_update() {
       lcd_drawMenu();
     }
   }
-  if (digitalRead(4) == 1 && millis() - millsPress > 200) {
+
+  // Select
+  if (digitalRead(selectButtonPin) == 1 && millis() - millsPress > 200) {
     millsPress = millis();
 
     selected = !selected;
@@ -173,18 +177,18 @@ void lcd_update() {
   }
 
   /* --- --- --- --- --- --- --- --- --- --- --- --- ---*/
-
+  // print information about selected option + control 
   if (selected) {
     switch (lcd_cursorPos) {
-      case 0:
+      case 0: // SPEED - speed of leds blinking or fading - 0%-100%
         Serial.write("pos = 0");
 
         lcd.setCursor(1, 0);
-        if (digitalRead(2) == 1 && leds_speed != 0 && millis() - millsPress > 200) {
+        if (digitalRead(leftButtonPin) == 1 && leds_speed != 0 && millis() - millsPress > 200) {
           millsPress = millis();
 
           leds_speed = leds_speed - 2;
-        } else if (digitalRead(3) == 1 && leds_speed != 100 && millis() - millsPress > 200) {
+        } else if (digitalRead(rightButtonPin) == 1 && leds_speed != 100 && millis() - millsPress > 200) {
           millsPress = millis();
 
           leds_speed = leds_speed + 2;
@@ -192,6 +196,7 @@ void lcd_update() {
 
         lcd.print("1. Speed: " + String(leds_speed) + "%");
         break;
+        
       case 1:
         break;
       case 2:
@@ -218,8 +223,7 @@ void lcd_drawMenu() {
   int c = 0;
   unsigned long millsSel;
 
-
-
+  // print option name based on cursor position
   if (!selected) {
     switch (lcd_cursorPos) {
       case 0:
