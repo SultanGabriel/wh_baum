@@ -236,7 +236,7 @@ void lcd_update() {
       case 2:
         break;
 
-//——————————————————
+//—————————————————— IDK ——————————————————//
       case 3:
         break;
     }
@@ -245,7 +245,7 @@ void lcd_update() {
   /*  int c = 0;
     for (int pos = 0; pos < 16; pos += 2) {
       lcd_drawChar(pos, 1, c);
-      if (c < 6) 
+      if (c < 6) {
         c = c + 1;
       }
     }*/
@@ -289,9 +289,9 @@ void lcd_drawMenu() {
 
   for (int pos = 0; pos < 8; pos += 2){
 	if (lcd_cursorPos * 2 == pos) { // draw inverted characted if currently selected, then 
-      	lcd_drawChar(pos, 1, c + 4);
+      		lcd_drawChar(pos, 1, c + 4);
       } else {
-      	lcd_drawChar(pos, 1, c);
+      		lcd_drawChar(pos, 1, c);
     }	
     if (c < 4) {
       c = c + 1;
