@@ -207,7 +207,11 @@ void lcd_update() {
   // print information about selected option + control
   if (selected) {
     switch (lcd_cursorPos) {
-      case 0: // SPEED - speed of leds blinking or fading - 0%-100%
+
+//——————————————————Speed——————————————————//
+	// speed of leds blinking or fading - 0%-100%
+
+      case 0:
         Serial.write("pos = 0");
 
         lcd.setCursor(1, 0);
@@ -223,11 +227,16 @@ void lcd_update() {
 
         lcd.print("1. Speed: " + String(leds_speed) + "%");
         break;
-
+//——————————————————Brightness——————————————————//
+	
       case 1:
         break;
+
+//——————————————————Modes——————————————————//
       case 2:
         break;
+
+//——————————————————
       case 3:
         break;
     }
@@ -236,14 +245,13 @@ void lcd_update() {
   /*  int c = 0;
     for (int pos = 0; pos < 16; pos += 2) {
       lcd_drawChar(pos, 1, c);
-      if (c < 6) {
+      if (c < 6) 
         c = c + 1;
       }
     }*/
 }
 
 void lcd_drawMenu() {
-  bool invert = true;
   int c = 0;
   unsigned long millsSel;
 
@@ -259,13 +267,13 @@ void lcd_drawMenu() {
       case 1:
         lcd.clear();
         lcd.setCursor(1, 0);
-        lcd.print("2. Modes");
+        lcd.print("2. Brightness");
         break;
 
       case 2:
         lcd.clear();
         lcd.setCursor(1, 0);
-        lcd.print("3. RGB");
+        lcd.print("3. Modes");
         break;
 
       case 3:
@@ -277,12 +285,14 @@ void lcd_drawMenu() {
   }
   lcd.setCursor(0, 1);
 
-  for (int pos = 0; pos < 8; pos += 2) {
-    if (lcd_cursorPos * 2 == pos && invert) {
-      lcd_drawChar(pos, 1, c + 4);
-    } else {
-      lcd_drawChar(pos, 1, c);
-    }
+ 
+
+  for (int pos = 0; pos < 8; pos += 2){
+	if (lcd_cursorPos * 2 == pos) { // draw inverted characted if currently selected, then 
+      	lcd_drawChar(pos, 1, c + 4);
+      } else {
+      	lcd_drawChar(pos, 1, c);
+    }	
     if (c < 4) {
       c = c + 1;
     }
@@ -296,6 +306,24 @@ void lcd_drawChar(int x, int y, int c) {
   // POSITION X , Y ------ custom character code 0-7
   lcd.setCursor(x, y);
   lcd.write(c);
+}
+
+int lcd_blink_interval = 250; // blinking interval;
+bool lcd_cursor_inverted = true; 
+unsigned long lcd_mills_blink; // time from last invert 
+
+void lcd_cursor_blink(){
+	if ( millis() - lcd_mills_blink > lcd_blink_interval){
+		lcd_mills_blink = millis();
+		
+		if(inverted) {
+			lcd_drawChar(cursorPos, 1, cursorPos + 4);	
+		}else {
+			lcd_drawChar(cursorPos, 1, cursorPos);
+		}
+
+		lcd_cursor_inverted = !lcd_cursor_inverted; 
+	}
 }
 
 void loop() {
