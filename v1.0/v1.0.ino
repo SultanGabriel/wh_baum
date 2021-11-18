@@ -171,6 +171,9 @@ bool selected = false;
 unsigned long millsPress;
 int pressDelay = 250;
 
+// LED VARIABLES !! :)
+
+int leds_brightness = 100; 
 int leds_speed = 100;
 
 void lcd_select() {
