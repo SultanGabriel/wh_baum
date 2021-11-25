@@ -1,340 +1,126 @@
 #include <Wire.h>              // Library for I2C communication
 #include <LiquidCrystal_I2C.h> // Library for LCD
+#include <ShiftRegisterPWM.h>
 
-// Custom chars
-/********************/
+#include "Led.h"
+#include "LcdMenu.h"
 
-byte Speed[] = {
-  B00000,
-  B10100,
+/*  Point of the project: Led Controlling system -- Designed to go on a fake
 
-  B01010,
-  B00101,
+  ----------------------Wiring---------------------------
 
-  B00101,
-  B01010,
+    LCD // Wiring:
+        --> SDA: A4
+        --> SCL: A5
 
-  B10100,
-  B00000
-};
-byte Speed_Inverted[] {
-  B11111,
-  B01011,
-  B10101,
-  B11010,
-  B11010,
-  B10101,
-  B01011,
-  B11111
-};
+    Buttons : // Wiring:
+        --> Left Button: 2
+        --> Right Button: 4
+        --> Select Button: 7
 
-byte IDK[] = {
-  B00000,
-  B00100,
-  B01010,
-  B10001,
-  B10001,
-  B01010,
-  B00100,
-  B00000,
-};
-byte IDK_Inverted[] = {
-  B11111,
-  B11011,
-  B10101,
-  B01110,
-  B01110,
-  B10101,
-  B11011,
-  B11111,
-};
-byte Check[] = {
-  B00000,
-  B00001,
-  B00011,
-  B10110,
-  B11100,
-  B01000,
-  B00000,
-  B00000
-};
-byte Check_Inverted[] = {
-  B11111,
-  B11110,
-  B11100,
-  B01001,
-  B00011,
-  B10111,
-  B11111,
-  B11111
-};
+    74HC595 // Wiring:
+        --> SHCP: 12
+        --> STCP: 8
+        --> DS: 11
 
-byte NOT_DEFINED[8] = {
-  B01110,
-  B10001,
-  B00001,
-  B00010,
-  B00100,
-  B00000,
-  B00100,
-  B00000
-};
-byte NOT_DEFINED_INVERTED[8] = {
-  B10001,
-  B01110,
-  B11110,
-  B11101,
-  B11011,
-  B11111,
-  B11011,
-  B11111
-};
-
-byte Bulb[8] = {
-  B01110,
-  B10001,
-  B10001,
-
-  B10001,
-  B01010,
-  B01010,
-
-  B00100,
-  B00000
-};
-byte Buld_Inverted[8] = {
-  B10001,
-  B01110,
-  B01110,
-  B01110,
-  B10101,
-  B10101,
-  B11011,
-  B11111
-};
-
-/******************/
-
-/*  TODO
-      -> connect
-          - LCD
-          - 74HC595
-
-          LCD // Wiring: SDA pin is connected to A4 and SCL pin to A5.
+  -------------------------------------------------------
 */
 
-int leftButtonPin = 2;
-int rightButtonPin = 3;
-int selectButtonPin = 4;
+#define leftButtonPin 7
+#define rightButtonPin 8
+#define selectButtonPin 12
 
 LiquidCrystal_I2C lcd = LiquidCrystal_I2C(0x27, 16, 2);
 
-void setup() {
-  // init pins
+LcdMenu lcdMenu(lcd);
 
-  pinMode(leftButtonPin, INPUT);   // LEFT
-  pinMode(rightButtonPin, INPUT);  // RIGHT
-  pinMode(selectButtonPin, INPUT); // SELECT
+ShiftRegisterPWM shiftRegister(1, 16);
 
-  // init display and custom chars
+// Led led1(5);
 
-  // -------INIT LCD:
+int PIN_SHCP = 4;
+int PIN_STCP = 3;
+int PIN_DS = 2;
 
-  lcd.init();
-  lcd.backlight();
-  lcd.noCursor();
+int PINS_PWM[5] = {5, 6, 9, 10, 11};
+int PINS_PWM_VALUES[5] = {255, 255, 255, 255, 255};
 
-  // -------INIT Chars
+int modes[5] = {"Fade", "Blink", "Shift", "Random", "Off"};
+int LED_modeIndex = 0;
 
-  lcd.createChar(0, Speed);
-  lcd.createChar(1, Bulb);
-  lcd.createChar(2, IDK); // TODO Think of something to put here 
-  lcd.createChar(3, Check);
+int fadeDelay = 250;
 
-  // INVERTED
+void setup()
+{
 
-  lcd.createChar(4, Speed_Inverted);
-  lcd.createChar(5, Buld_Inverted);
-  lcd.createChar(6, IDK_Inverted);
-  lcd.createChar(7, Check_Inverted);
+    // init pins
 
-  //----------
+    pinMode(leftButtonPin, INPUT);   // LEFT
+    pinMode(rightButtonPin, INPUT);  // RIGHT
+    pinMode(selectButtonPin, INPUT); // SELECT
 
-  lcd_drawMenu();
+    // 74HC595 Initialization
+    shiftRegister.interrupt(ShiftRegisterPWM::UpdateFrequency::Fast);
+    pinMode(PIN_SHCP, OUTPUT);
+    pinMode(PIN_STCP, OUTPUT);
+    pinMode(PIN_DS, OUTPUT);
 
-  Serial.begin(9600);
+    for (int i = 0; i < sizeof(PINS_PWM); i++)
+    {
+        pinMode(PINS_PWM, OUTPUT);
+    }
+    // PWM Initialization
+
+    // led1.init();
+
+    // -------INIT LCD:
+
+    lcd.init();
+    lcd.backlight();
+    lcd.noCursor();
+
+    // Initialize Setup
+
+    //lcd_drawMenu();
+
+    // -- Debug way
+    lcdMenu.init();
+
+    lcdMenu.drawMenu();
+
+    Serial.begin(9600);
 }
 
-int lcd_cursorPos = 0;
+void loop()
+{
+    lcdMenu.update();
 
-bool selected = false;
-unsigned long millsPress;
-int pressDelay = 250;
-
-// LED VARIABLES !! :)
-
-int leds_brightness = 100; 
-int leds_speed = 100;
-
-void lcd_select() {
-}
-
-void lcd_update() {
-  // Button Press Handler
-  // - -- --- --- -- -
-  // LEFT
-  if (!selected) {
-    if (digitalRead(leftButtonPin) == 1 && millis() - millsPress > pressDelay) {
-      millsPress = millis();
-      //    Serial.write("LEFT\n");
-
-      if (lcd_cursorPos == 0) {
-        lcd_cursorPos = 3;
-      } else {
-        lcd_cursorPos = (lcd_cursorPos - 1) % 4;
-      }
-
-      lcd_drawMenu();
-    }
-
-    // RIGHT
-    if (digitalRead(rightButtonPin) == 1 && millis() - millsPress > pressDelay) {
-      millsPress = millis();
-      //   Serial.write("RIGHT\n");
-      lcd_cursorPos = (lcd_cursorPos + 1) % 4;
-
-      lcd_drawMenu();
-    }
-  }
-
-  // Select
-  if (digitalRead(selectButtonPin) == 1 && millis() - millsPress > pressDelay) {
-    millsPress = millis();
-
-    selected = !selected;
-
-    lcd_drawMenu();
-    //    Serial.write(lcd_cursorPos);
-    //    Serial.write("SELECT\n");
-  }
-
-  /* --- --- --- --- --- --- --- --- --- --- --- --- ---*/
-  // print information about selected option + control
-  if (selected) {
-    switch (lcd_cursorPos) {
-
-      //——————————————————Speed——————————————————//
-      // speed of leds blinking or fading - 0%-100%
-
-      case 0:
-        Serial.write("pos = 0");
-
-        lcd.setCursor(1, 0);
-        if (digitalRead(leftButtonPin) == 1 && leds_speed != 0 && millis() - millsPress > pressDelay) {
-          millsPress = millis();
-
-          leds_speed = leds_speed - 2;
-        } else if (digitalRead(rightButtonPin) == 1 && leds_speed != 100 && millis() - millsPress > pressDelay) {
-          millsPress = millis();
-
-          leds_speed = leds_speed + 2;
+    switch (LED_modeIndex)
+    {
+    case 0:
+        for (uint8_t i = 0; i < 8; i++)
+        {
+            uint8_t val = (uint8_t)(((float)
+                                         sin(millis() / fadeDelay + i / 8.0 * 2.0 * PI) +
+                                     1) *
+                                    128);
+            shiftRegister.set(i, val);
         }
-
-        lcd.print("1. Speed: " + String(leds_speed) + "%");
         break;
-      //——————————————————Brightness——————————————————//
-
-      case 1:
+    case 1:
         break;
-
-      //——————————————————Modes——————————————————//
-      case 2:
+    case 2:
         break;
-
-      //—————————————————— IDK ——————————————————//
-      case 3:
-        break;
+    case 3:
+        for (uint8_t i = 0; i < 8; i++)
+        {
+            shiftRegister.set(i, 0);
+        }
     }
-  }
-  // CURSOR BLINK !
-  lcd_cursor_blink();
 }
 
-void lcd_drawMenu() {
-  int c = 0;
-  unsigned long millsSel;
+// FUNCTIONS TO CONTROL LEDS
 
-  // print option name based on cursor position
-  if (!selected) {
-    switch (lcd_cursorPos) {
-      case 0:
-        lcd.clear();
-        lcd.setCursor(1, 0);
-        lcd.print("1. Speed");
-        break;
+/*
 
-      case 1:
-        lcd.clear();
-        lcd.setCursor(1, 0);
-        lcd.print("2. Brightness");
-        break;
-
-      case 2:
-        lcd.clear();
-        lcd.setCursor(1, 0);
-        lcd.print("3. Modes");
-        break;
-
-      case 3:
-        lcd.clear();
-        lcd.setCursor(1, 0);
-        lcd.print("4. Back");
-        break;
-    }
-  }
-  lcd.setCursor(0, 1);
-
-
-
-  for (int pos = 0; pos < 8; pos += 2) {
-    if (lcd_cursorPos * 2 == pos) { // draw inverted characted if currently selected, then
-      lcd_drawChar(pos, 1, c + 4);
-    } else {
-      lcd_drawChar(pos, 1, c);
-    }
-    if (c < 4) {
-      c = c + 1;
-    }
-  }
-
-  lcd.setCursor(14, 1);
-  lcd.print(lcd_cursorPos);
-}
-
-void lcd_drawChar(int x, int y, int c) {
-  // POSITION X , Y ------ custom character code 0-7
-  lcd.setCursor(x, y);
-  lcd.write(c);
-}
-
-int lcd_blink_interval = 500; // blinking interval;
-bool lcd_cursor_inverted = true;
-unsigned long lcd_mills_blink; // time from last invert
-
-void lcd_cursor_blink() {
-  if (millis()- lcd_mills_blink > lcd_blink_interval) {
-    lcd_mills_blink = millis();
-
-    if (lcd_cursor_inverted) {
-      lcd_drawChar(lcd_cursorPos * 2, 1, lcd_cursorPos + 4);
-    } else {
-      lcd_drawChar(lcd_cursorPos * 2, 1, lcd_cursorPos);
-    }
-
-    lcd_cursor_inverted = !lcd_cursor_inverted;
-  }
-}
-
-void loop() {
-  lcd_update();
-}
+*/
