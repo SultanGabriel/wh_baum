@@ -133,14 +133,18 @@ void LcdMenu::update()
         case 2:
 
             lcd->setCursor(0, 0);
-            if (digitalRead(leftButtonPin) == 1 && led_selected_mode != 0 && millis() - millsPress > pressDelay)
+            if (digitalRead(leftButtonPin) == 1 &&
+                led_selected_mode != 0 &&
+                millis() - millsPress > pressDelay)
             {
                 millsPress = millis();
 
                 led_selected_mode = led_selected_mode - 1;
                 //hc_write(hc_leds);
             }
-            else if (digitalRead(rightButtonPin) == 1 && led_selected_mode != 4 && millis() - millsPress > pressDelay)
+            else if (digitalRead(rightButtonPin) == 1 &&
+                     led_selected_mode != 5 &&
+                     millis() - millsPress > pressDelay)
             {
                 millsPress = millis();
 

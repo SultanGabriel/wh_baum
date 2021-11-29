@@ -4,6 +4,7 @@
 
 #include "Led.h"
 #include "LcdMenu.h"
+#include "State.h"
 
 /*  Point of the project: Led Controlling system -- Designed to go on a fake
 
@@ -14,16 +15,29 @@
         --> SCL: A5
 
     Buttons : // Wiring:
-        --> Left Button: 2
-        --> Right Button: 4
-        --> Select Button: 7
+        --> Left Button: 7
+        --> Right Button: 8
+        --> Select Button: 12
 
     74HC595 // Wiring:
-        --> SHCP: 12
-        --> STCP: 8
-        --> DS: 11
+        --> SHCP: 4
+        --> STCP: 3
+        --> DS: 2
+
+    PWM // Wiring:  --think-- PWM LEFT : 5 6 9 10 11
+        --> 1.
+        --> 2.
+        --> 3.
+        --> 4.
 
   -------------------------------------------------------
+*/
+/*
+    Let's Talk next Step
+
+        thinking about how to fucking control the leds
+
+
 */
 
 #define leftButtonPin 7
@@ -36,6 +50,7 @@ LcdMenu lcdMenu(lcd);
 
 ShiftRegisterPWM shiftRegister(1, 16);
 
+State state = State();
 // Led led1(5);
 
 int PIN_SHCP = 4;
@@ -61,6 +76,7 @@ void setup()
 
     // 74HC595 Initialization
     shiftRegister.interrupt(ShiftRegisterPWM::UpdateFrequency::Fast);
+
     pinMode(PIN_SHCP, OUTPUT);
     pinMode(PIN_STCP, OUTPUT);
     pinMode(PIN_DS, OUTPUT);
@@ -81,21 +97,36 @@ void setup()
 
     // Initialize Setup
 
-    //lcd_drawMenu();
-
-    // -- Debug way
     lcdMenu.init();
 
     lcdMenu.drawMenu();
 
+    // temporary function pointers
+
+    int (*LED_POINTER)(){&LED_HANDLER};
+    int (*PWM_POINTER)(){&PWM_HANDLER};
+    int (*HC_POINTER)(){&HC_HANDLER};
+
+    // Declare state !
+
+    state = State(LED_POINTER, PWM_POINTER, HC_POINTER);
+
+    //-----
+
     Serial.begin(9600);
 }
-
-void loop()
+int LED_HANDLER()
 {
-    lcdMenu.update();
-
-    switch (LED_modeIndex)
+    return 0;
+}
+int PWM_HANDLER()
+{
+    return 0;
+}
+int HC_HANDLER()
+{
+    int mode = state.getMode();
+    switch (mode)
     {
     case 0:
         for (uint8_t i = 0; i < 8; i++)
@@ -107,16 +138,29 @@ void loop()
             shiftRegister.set(i, val);
         }
         break;
-    case 1:
-        break;
-    case 2:
-        break;
+
     case 3:
         for (uint8_t i = 0; i < 8; i++)
         {
             shiftRegister.set(i, 0);
         }
+
+        break;
+
+    default:
+        Serial.println("Current Mode: " + String(mode));
+        break;
     }
+
+    return 0;
+}
+
+void loop()
+{
+    state.updateHandlers();
+    lcdMenu.update();
+
+    state.setMode(lcdMenu.led_selected_mode);
 }
 
 // FUNCTIONS TO CONTROL LEDS

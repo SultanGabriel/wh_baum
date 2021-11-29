@@ -131,7 +131,7 @@ public:
 
     /***/
 
-    String led_modes[4] = {"On    ", "Fade  ", "Random", "Idk   "};
+    String led_modes[5] = {"Random", "Fade  ", "Pulse ", "Blink ", "Rand*"};
     int led_selected_mode = 0;
 
     int leftButtonPin = 7;
