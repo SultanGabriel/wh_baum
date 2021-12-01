@@ -4,36 +4,15 @@
      */
 State::State()
 {
-}
-
-/*
-
-    New Plan for this
-        use it as a variable object.. with everything needed
-        getter / setters to 
-
-*/
-State::State(fpointer _Led_handlerFunction,
-             fpointer _Pwm_handlerFunction,
-             fpointer _Hc_handlerFunction)
-{
-
     // Use 'this->'
 
     int Led_Brightness = 100;
-    int Led_Speed = 100;
+    int Led_Speed = 50;
 
     int Mode = 0; // 0 - Fade ; 1 - x ;
 
     int Lcd_cursorPos = 0;
     bool Lcd_update = true; // Default: true -- so it refreshes after it starts
-
-    // serios stuff
-    // ADMIRE IT THEN GET RID OF IT BECAUSE WE'RE GOING SIMPLER FMM VIATA WHY
-
-    Led_handlerFunction = _Led_handlerFunction;
-    Pwm_handlerFunction = _Pwm_handlerFunction;
-    Hc_handlerFunction = _Hc_handlerFunction;
 }
 
 void State::init()
@@ -43,11 +22,6 @@ void State::init()
     // {
     //     digitalWrite(pin, HIGH);
     // }
-}
-
-void State::updateHandlers()
-{
-    Hc_handlerFunction();
 }
 
 //
@@ -68,6 +42,10 @@ void State::setMode(int newMode)
     Mode = newMode;
 }
 
+void State::setSpeed(int newSpeed)
+{
+    Led_Speed = newSpeed;
+}
 //
 
 // Getters
@@ -80,4 +58,9 @@ int State::getMode()
 int State::getLedBrightness()
 {
     return Led_Brightness;
+}
+
+int State::getSpeed()
+{
+    return Led_Speed;
 }

@@ -99,13 +99,13 @@ void LcdMenu::update()
             {
                 millsPress = millis();
 
-                leds_speed = leds_speed - 2;
+                leds_speed = leds_speed - 5;
             }
             else if (digitalRead(rightButtonPin) == 1 && leds_speed != 100 && millis() - millsPress > pressDelay)
             {
                 millsPress = millis();
 
-                leds_speed = leds_speed + 2;
+                leds_speed = leds_speed + 5;
             }
 
             lcd->print("1. Speed: " + String(leds_speed) + "%   ");

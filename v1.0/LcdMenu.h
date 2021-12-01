@@ -148,6 +148,6 @@ public:
     // ??????
 
     int leds_brightness = 100;
-    int leds_speed = 100;
+    int leds_speed = 50;
 };
 #endif
