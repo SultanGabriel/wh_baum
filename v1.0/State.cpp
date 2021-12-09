@@ -35,7 +35,7 @@ void State::init()
 void State::setLedBrightness(int newBrightness)
 {
 
-    Led_Brightness = newBrightness % 101; // % 101 so its bound to 0 - 100 :)
+    Led_Brightness = newBrightness; // % 101 so its bound to 0 - 100 :)
     Lcd_update = true;
 }
 

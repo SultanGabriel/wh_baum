@@ -63,7 +63,7 @@ int PIN_DS = 2;
 int PIN_LED = 6;
 int PINS_RGB[3] = {9, 10, 11};
 
-int modes[5] = {"Fade", "Blink", "Shift", "Random", "Off"};
+int modes[4] = {"Default  ", "Fade     ", "Blink    ", "On       "};
 int LED_modeIndex = 0;
 
 void setup()
@@ -136,81 +136,185 @@ int rgb_handler(int r, int g, int b)
     analogWrite(PINS_RGB[2], b);
 }
 
+// 0:
+unsigned long millsBlink = 0;
+
+// 1:
+int fadeValue = 0;
+int fadeInv = 1;
+
+// blink
+
+bool blinkVal = true;
+
 void loop()
 {
-    modeHandler();
-
     lcdMenu.update();
+
+    if (!lcdMenu.drawing)
+    {
+        modeHandler();
+    }
 
     if (state.getMode() != lcdMenu.led_selected_mode)
     {
         state.setMode(lcdMenu.led_selected_mode);
     }
-    state.setSpeed(lcdMenu.leds_speed);
-
-    // hc_handler();
-    // led_handler();
+    state.setSpeed(1550 - map(lcdMenu.leds_speed, 0, 100, 150, 1500));
+    state.setLedBrightness(map(lcdMenu.leds_brightness, 0, 100, 0, 255));
 }
+int r = 255, g = 0, b = 0;
+int rgbIdx = 0;
+unsigned long millsRGB;
 
-// 0:
-unsigned long millsBlink;
-int BlinkDelay = 750; // 1500 * (state.getSpeed() / 100);
-int blinkValue = 170;
-// 1:
-int fadeValue = 0;
-int fadeInv = 1;
+int BlinkDelay = state.getSpeed();
+int led_maxValue = state.getLedBrightness();
 
 void modeHandler()
 {
-    // int fadeValue = 0;
+    BlinkDelay = state.getSpeed();
+    led_maxValue = state.getLedBrightness();
 
+    Serial.print("Blink Delay: ");
+    Serial.println(BlinkDelay);
+    Serial.print("Led Max Value: ");
+    Serial.println(led_maxValue);
+
+    if (millis() - millsRGB > BlinkDelay)
+    {
+        millsRGB = millis();
+        switch (rgbIdx)
+        {
+        case 0:
+            r = 255;
+            g = 0;
+            b = 0;
+
+            rgbIdx += 1;
+            break;
+
+        case 1:
+            r = 0;
+            g = 255;
+            b = 0;
+
+            rgbIdx += 1;
+
+            break;
+
+        case 2:
+            r = 0;
+            g = 255;
+            b = 255;
+
+            rgbIdx += 1;
+
+            break;
+
+        case 3:
+            r = 255;
+            g = 0;
+            b = 255;
+            rgbIdx += 1;
+
+            break;
+
+        case 4:
+            r = 0;
+            g = 245;
+            b = 120;
+            rgbIdx += 1;
+            break;
+
+        case 5:
+            r = 255;
+            g = 125;
+            b = 70;
+            rgbIdx += 1;
+            break;
+        case 6:
+            r = 0;
+            g = 0;
+            b = 255;
+            rgbIdx += 1;
+
+            break;
+        }
+        rgb_handler(255 - r, 255 - g, 255 - b);
+    }
+    rgbIdx = rgbIdx % 7;
+    // ---
     int mode = state.getMode();
+    Serial.print("Mode: ");
     Serial.println(mode);
 
-    int fadeSpeed = map(state.getSpeed(), 0, 100, 1250, 100); // 150; // 100 -> 500 ?
+    int fadeSpeed = map(state.getSpeed(), 100, 0, 1250, 100); // 150; // 100 -> 500 ?
+
     switch (mode)
     {
     case 0: // RANDOM
+        Serial.print("Default");
 
-        rgb_handler(255 - state.Led_Rgb[0], 255 - state.Led_Rgb[1], 255 - state.Led_Rgb[2]);
+        //        HC
+        // for (uint8_t i = 0; i < 8; i++)
+        // {
+        //     uint8_t val = (uint8_t)(((float)
+        //                                  sin(millis() / 350 + i / 8.0 * 2.0 * PI) +
+        //                              1) *
+        //                             128);
+        //     shiftRegister.set(i, val);
+        // }
 
-        // HC
-        for (uint8_t i = 0; i < 8; i++)
-        {
-            uint8_t val = (uint8_t)(((float)
-                                         sin(millis() / BlinkDelay + i / 8.0 * 2.0 * PI) +
-                                     1) *
-                                    128);
-            shiftRegister.set(i, val);
-        }
 
-        // 12v Leds
+    case 1:
+        Serial.print("Blink");
         if (millis() - millsBlink > BlinkDelay)
         {
-            if (blinkValue == 170)
+            millsBlink = millis();
+            if (blinkVal)
             {
-                blinkValue = 0;
+                led_handler(led_maxValue);
+                hc_handler(led_maxValue);
+                blinkVal = false;
             }
             else
             {
-                blinkValue = 170;
+                led_handler(0);
+                hc_handler(0);
+                blinkVal = true;
             }
-            led_handler(blinkValue);
-            millsBlink = millis();
         }
-
         break;
 
-    case 1: // FADE
-
+    case 2: // Blink*
+        Serial.println("Blink*");
+        if (millis() - millsBlink > BlinkDelay)
+        {
+            millsBlink = millis();
+            if (blinkVal)
+            {
+                led_handler(0);
+                hc_handler(led_maxValue);
+                blinkVal = false;
+            }
+            else
+            {
+                led_handler(led_maxValue);
+                hc_handler(0);
+                blinkVal = true;
+            }
+        }
+        break;
+    case 3: // FADE
+        Serial.print("FADE");
         int fadeInc = map(state.getSpeed(), 0, 100, 1, 5);
 
         fadeValue += fadeInc * fadeInv;
 
-        if (fadeValue > 255)
+        if (fadeValue > led_maxValue)
         {
             fadeInv = fadeInv * -1;
-            fadeValue = 255;
+            fadeValue = led_maxValue;
         }
         else if (fadeValue < 0)
         {
@@ -223,16 +327,24 @@ void modeHandler()
 
         break;
 
-    case 3:
-        for (uint8_t i = 0; i < 8; i++)
-        {
-            shiftRegister.set(i, 0);
-        }
+    case 4: // On
+        Serial.print("On");
+
+        led_handler(255);
+        hc_handler(255);
 
         break;
 
+    case 5: // Off
+        Serial.print("Off");
+
+        led_handler(0);
+        hc_handler(0);
+        break;
+
     default:
-        Serial.println("Current Mode: " + String(mode));
+
+        Serial.write("Error default case triggered ..");
         break;
     }
 }

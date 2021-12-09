@@ -131,7 +131,8 @@ public:
 
     /***/
 
-    String led_modes[5] = {"Random", "Fade  ", "Pulse ", "Blink ", "Rand*"};
+    String led_modes[6] = {
+        "Default  ", "Blink    ", "Blink*   ", "Fade", "On       ", "Off      "};
     int led_selected_mode = 0;
 
     int leftButtonPin = 7;
@@ -149,5 +150,7 @@ public:
 
     int leds_brightness = 100;
     int leds_speed = 50;
+
+    bool drawing = false;
 };
 #endif

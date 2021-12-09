@@ -49,11 +49,11 @@ void LcdMenu::update()
 
             if (cursorPosition == 0)
             {
-                cursorPosition = 3;
+                cursorPosition = 2;
             }
             else
             {
-                cursorPosition = (cursorPosition - 1) % 4;
+                cursorPosition = (cursorPosition - 1) % 3;
             }
 
             drawMenu();
@@ -64,7 +64,7 @@ void LcdMenu::update()
         {
             millsPress = millis();
             //   Serial.write("RIGHT\n");
-            cursorPosition = (cursorPosition + 1) % 4;
+            cursorPosition = (cursorPosition + 1) % 3;
 
             drawMenu();
         }
@@ -115,17 +115,17 @@ void LcdMenu::update()
 
         case 1:
             lcd->setCursor(0, 0);
-            if (digitalRead(leftButtonPin) == 1 && leds_brightness != 0 && millis() - millsPress > pressDelay)
+            if (digitalRead(leftButtonPin) == 1 && leds_brightness >= 0 && millis() - millsPress > pressDelay)
             {
                 millsPress = millis();
 
-                leds_brightness = leds_brightness - 2;
+                leds_brightness = leds_brightness - 5;
             }
-            else if (digitalRead(rightButtonPin) == 1 && leds_brightness != 100 && millis() - millsPress > pressDelay)
+            else if (digitalRead(rightButtonPin) == 1 && leds_brightness <= 100 && millis() - millsPress > pressDelay)
             {
                 millsPress = millis();
 
-                leds_brightness = leds_brightness + 2;
+                leds_brightness = leds_brightness + 5;
             }
 
             lcd->print("2. Bright: " + String(leds_brightness) + "%   ");
@@ -141,16 +141,16 @@ void LcdMenu::update()
                 millsPress = millis();
 
                 led_selected_mode = led_selected_mode - 1;
-                //hc_write(hc_leds);
+                // hc_write(hc_leds);
             }
             else if (digitalRead(rightButtonPin) == 1 &&
-                     led_selected_mode != 5 &&
+                     led_selected_mode != 4 &&
                      millis() - millsPress > pressDelay)
             {
                 millsPress = millis();
 
                 led_selected_mode = led_selected_mode + 1;
-                //hc_write(hc_leds);
+                // hc_write(hc_leds);
             }
 
             lcd->print("3. Mode: " + led_modes[led_selected_mode]);
@@ -179,6 +179,8 @@ void LcdMenu::update()
 
 void LcdMenu::drawMenu()
 {
+    drawing = true;
+
     int c = 0;
     unsigned long millsSel;
 
@@ -214,7 +216,7 @@ void LcdMenu::drawMenu()
     }
     lcd->setCursor(0, 1);
 
-    for (int pos = 0; pos < 8; pos += 2)
+    for (int pos = 0; pos < 6; pos += 2)
     {
         if (cursorPosition * 2 == pos)
         { // draw inverted characted if currently selected, then
@@ -230,8 +232,10 @@ void LcdMenu::drawMenu()
         }
     }
 
-    lcd->setCursor(14, 1);
-    lcd->print(cursorPosition);
+    // lcd->setCursor(14, 1);
+    // lcd->print(led_selected_mode);
+
+    drawing = false;
 }
 
 void LcdMenu::drawChar(int x, int y, int c)
