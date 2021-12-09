@@ -1,3 +1,4 @@
+
 #include <Wire.h>              // Library for I2C communication
 #include <LiquidCrystal_I2C.h> // Library for LCD
 #include <ShiftRegisterPWM.h>
@@ -24,14 +25,13 @@
         --> STCP: 3
         --> DS: 2
 
-PWM // Wiring:  --think-- PWM LEFT : 5 /6 9 10 11
-        --> 1.
-        --> 2.
-        --> 3.
-        --> 4.
-
     12V LEDS // Wiring:
         --> 6
+
+    RGB LEDS // Wiring:
+        --> R:
+        --> G:
+        --> B:
 
   -------------------------------------------------------
 */
@@ -60,10 +60,8 @@ int PIN_SHCP = 4;
 int PIN_STCP = 3;
 int PIN_DS = 2;
 
-int PINS_PWM[5] = {5, 6, 9, 10, 11};
-int PINS_PWM_VALUES[5] = {255, 255, 255, 255, 255};
-
 int PIN_LED = 6;
+int PINS_RGB[3] = {9, 10, 11};
 
 int modes[5] = {"Fade", "Blink", "Shift", "Random", "Off"};
 int LED_modeIndex = 0;
@@ -84,9 +82,10 @@ void setup()
     pinMode(PIN_STCP, OUTPUT);
     pinMode(PIN_DS, OUTPUT);
 
-    for (int i = 0; i < sizeof(PINS_PWM); i++)
+    // 12v Leds
+    for (int i = 0; i < sizeof(PINS_RGB); i++)
     {
-        pinMode(PINS_PWM, OUTPUT);
+        pinMode(PINS_RGB[i], OUTPUT);
     }
 
     // PWM Initialization
@@ -115,48 +114,12 @@ void setup()
 }
 int led_handler(int val)
 {
-    //     switch (mode)
-    //     {
-    //     case 0: // RANDOM
-    //         analogWrite(PIN_LED, 0);
-    //         break;
-
-    //     case 1: // FADE
-
-    //         int fadeInc = map(state.getSpeed(), 0, 100, 1, 5);
-
-    //         fadeValue += fadeInc * fadeInv;
-
-    //         if (fadeValue > 255)
-    //         {
-    //             fadeInv = fadeInv * -1;
-    //             fadeValue = 255;
-    //         }
-    //         else if (fadeValue < 0)
-    //         {
-    //             fadeInv = fadeInv * -1;
-    //             fadeValue = 0;
-    //         }
-
-    //         analogWrite(PIN_LED, fadeValue);
-
-    //         break;
-
-    //     case 3:
-
-    //         break;
-
-    //     default:
-    //         Serial.println("Current Mode: " + String(mode));
-    //         break;
-    //     }
 
     analogWrite(PIN_LED, val);
 
     return 0;
 }
-int fadeValue = 0;
-int fadeInv = 1;
+
 int hc_handler(int val)
 {
     for (uint8_t i = 0; i < 8; i++)
@@ -164,6 +127,13 @@ int hc_handler(int val)
         shiftRegister.set(i, val);
     }
     return 0;
+}
+
+int rgb_handler(int r, int g, int b)
+{
+    analogWrite(PINS_RGB[0], r);
+    analogWrite(PINS_RGB[1], g);
+    analogWrite(PINS_RGB[2], b);
 }
 
 void loop()
@@ -182,12 +152,13 @@ void loop()
     // led_handler();
 }
 
-/*
-int PWM_HANDLER()
-{
-    return 0;
-}
-*/
+// 0:
+unsigned long millsBlink;
+int BlinkDelay = 750; // 1500 * (state.getSpeed() / 100);
+int blinkValue = 170;
+// 1:
+int fadeValue = 0;
+int fadeInv = 1;
 
 void modeHandler()
 {
@@ -196,31 +167,41 @@ void modeHandler()
     int mode = state.getMode();
     Serial.println(mode);
 
-    int fadeSpeed = map(state.getSpeed(), 0, 100, 1250, 100); //150; // 100 -> 500 ?
+    int fadeSpeed = map(state.getSpeed(), 0, 100, 1250, 100); // 150; // 100 -> 500 ?
     switch (mode)
     {
     case 0: // RANDOM
 
-        // for (uint8_t i = 0; i < 8; i++)
-        // {
-        //     uint8_t val = (uint8_t)(((float)
-        //                                  sin(millis() / fadeSpeed + i / 8.0 * 2.0 * PI) +
-        //                              1) *
-        //                             128);
-        //     shiftRegister.set(i, val);
-        // }
+        rgb_handler(255 - state.Led_Rgb[0], 255 - state.Led_Rgb[1], 255 - state.Led_Rgb[2]);
+
+        // HC
+        for (uint8_t i = 0; i < 8; i++)
+        {
+            uint8_t val = (uint8_t)(((float)
+                                         sin(millis() / BlinkDelay + i / 8.0 * 2.0 * PI) +
+                                     1) *
+                                    128);
+            shiftRegister.set(i, val);
+        }
+
+        // 12v Leds
+        if (millis() - millsBlink > BlinkDelay)
+        {
+            if (blinkValue == 170)
+            {
+                blinkValue = 0;
+            }
+            else
+            {
+                blinkValue = 170;
+            }
+            led_handler(blinkValue);
+            millsBlink = millis();
+        }
+
         break;
 
     case 1: // FADE
-
-        // shiftRegister.set(0, 50);
-        // shiftRegister.set(1, 100);
-        // shiftRegister.set(2, 150);
-        // shiftRegister.set(3, 175);
-        // shiftRegister.set(4, 200);
-        // shiftRegister.set(5, 220);
-        // shiftRegister.set(6, 255);
-        // shiftRegister.set(7, 255);
 
         int fadeInc = map(state.getSpeed(), 0, 100, 1, 5);
 
@@ -236,8 +217,6 @@ void modeHandler()
             fadeInv = fadeInv * -1;
             fadeValue = 0;
         }
-
-        Serial.println(fadeValue);
 
         hc_handler(fadeValue);
         led_handler(fadeValue);
@@ -256,13 +235,4 @@ void modeHandler()
         Serial.println("Current Mode: " + String(mode));
         break;
     }
-}
-
-void writeLeds()
-{
-}
-
-void writeHc()
-
-{
 }

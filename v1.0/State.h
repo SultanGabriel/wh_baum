@@ -7,7 +7,8 @@ class State
 
 private:
     int Led_Brightness;
-    int Led_Speed;
+
+    bool Led_RgbSync;
 
     int Mode;
 
@@ -18,7 +19,8 @@ public:
     State();
 
     void init();
-
+    int Led_Speed;
+    int Led_Rgb[3];
     //
 
     // Setters

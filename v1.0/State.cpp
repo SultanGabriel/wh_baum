@@ -1,13 +1,15 @@
 #include "State.h"
 /**
-     * 
-     */
+ *
+ */
 State::State()
 {
     // Use 'this->'
 
     int Led_Brightness = 100;
     int Led_Speed = 50;
+    int Led_Rgb[3] = {0, 100, 100};
+    bool Led_RgbSync = true;
 
     int Mode = 0; // 0 - Fade ; 1 - x ;
 
