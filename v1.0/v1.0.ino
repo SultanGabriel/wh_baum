@@ -1,13 +1,11 @@
-
 #include <Wire.h>              // Library for I2C communication
 #include <LiquidCrystal_I2C.h> // Library for LCD
 #include <ShiftRegisterPWM.h>
 
-#include "Led.h"
 #include "LcdMenu.h"
 #include "State.h"
 
-/*  Point of the project: Led Controlling system -- Designed to go on a fake
+/*  Point of the project: Led Controlling system -- Designed to go on a fake christmas tree
 
   ----------------------Wiring---------------------------
 
@@ -29,18 +27,11 @@
         --> 6
 
     RGB LEDS // Wiring:
-        --> R:
-        --> G:
-        --> B:
+        --> R: 9
+        --> G: 10
+        --> B: 11
 
   -------------------------------------------------------
-*/
-/*
-    Let's Talk next Step
-
-        thinking about how to fucking control the leds
-
-
 */
 
 #define leftButtonPin 7
@@ -54,7 +45,6 @@ LcdMenu lcdMenu(lcd);
 ShiftRegisterPWM shiftRegister(1, 255);
 
 State state = State();
-// Led led1(5);
 
 int PIN_SHCP = 4;
 int PIN_STCP = 3;
@@ -88,9 +78,6 @@ void setup()
         pinMode(PINS_RGB[i], OUTPUT);
     }
 
-    // PWM Initialization
-
-    // led1.init();
 
     // -------INIT LCD:
 
@@ -264,7 +251,6 @@ void modeHandler()
         //                             128);
         //     shiftRegister.set(i, val);
         // }
-
 
     case 1:
         Serial.print("Blink");
